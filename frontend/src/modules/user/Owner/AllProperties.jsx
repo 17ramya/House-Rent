@@ -1,6 +1,7 @@
 import { message } from 'antd';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../../../api';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -39,7 +40,7 @@ const AllProperties = () => {
 
    const getAllProperty = async () => {
       try {
-         const response = await axios.get('http://localhost:8001/api/owner/getallproperties', {
+         const response = await axios.get(`${API_BASE_URL}/api/owner/getallproperties`, {
             headers: { 'Authorization': `Bearer ${localStorage.getItem("token")}` }
          });
          if (response.data.success) {
@@ -84,7 +85,7 @@ const AllProperties = () => {
          formData.append('additionalInfo', editingPropertyData.additionalInfo);
          formData.append('propertyImage', image);
          formData.append('isAvailable', status);
-         const res = await axios.patch(`http://localhost:8001/api/owner/updateproperty/${propertyId}`, formData, {
+         const res = await axios.patch(`${API_BASE_URL}/api/owner/updateproperty/${propertyId}`, formData, {
             headers: { 'Authorization': `Bearer ${localStorage.getItem("token")}` }
          })
          if (res.data.success) {
@@ -101,7 +102,7 @@ const AllProperties = () => {
       let assure = window.confirm("are you sure to delete")
       if (assure) {
          try {
-            const response = await axios.delete(`http://localhost:8001/api/owner/deleteproperty/${propertyId}`, {
+            const response = await axios.delete(`${API_BASE_URL}/api/owner/deleteproperty/${propertyId}`, {
                headers: { 'Authorization': `Bearer ${localStorage.getItem("token")}` }
             });
 
@@ -150,7 +151,7 @@ const AllProperties = () => {
                         <TableCell align="center">{property.ownerContact}</TableCell>
                         <TableCell align="center">{property.propertyAmt}</TableCell>
                         <TableCell align="center">{property.isAvailable}</TableCell>
-                        {/* <TableCell align="center"><img style={{width: 150, height: 150}} src={`http://localhost:8001${property.propertyImage.path}`} alt="photos" /></TableCell> */}
+                        {/* <TableCell align="center"><img style={{width: 150, height: 150}} src={`${API_BASE_URL}${property.propertyImage.path}`} alt="photos" /></TableCell> */}
                         <TableCell align="center"><Button variant='outline-info' onClick={() => handleShow(property._id, 'Available')}>
                            Edit
                         </Button>

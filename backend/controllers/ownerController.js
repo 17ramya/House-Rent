@@ -30,7 +30,14 @@ const addPropertyController = async (req, res) => {
       message: "New Property has been stored",
     });
   } catch (error) {
-    console.log("Error in get All Users Controller ", error);
+    console.error("Error adding property:", error);
+    // Always answer: without this the request just hangs until the platform
+    // kills it, which the browser reports as a network error rather than a
+    // failure the user can understand.
+    return res.status(500).send({
+      success: false,
+      message: "Could not save the property",
+    });
   }
 };
 

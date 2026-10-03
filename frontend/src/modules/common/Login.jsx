@@ -4,6 +4,7 @@ import { Container, Box, Avatar, Button, TextField, Grid, Typography, IconButton
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import axios from 'axios';
+import { API_BASE_URL } from '../../api';
 import { message } from 'antd';
 
 const Login = () => {
@@ -25,7 +26,7 @@ const Login = () => {
       return message.error("Please fill all fields");
     } else {
       axios
-        .post('http://localhost:8001/api/user/login', data)
+        .post(`${API_BASE_URL}/api/user/login`, data)
         .then((res) => {
           if (res.data.success) {
             message.success(res.data.message);

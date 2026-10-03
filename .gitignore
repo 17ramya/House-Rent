@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Local configuration: real secrets (MONGO_DB, JWT_KEY). Never commit this -
+# copy the matching .env.example instead. On Vercel the values come from the
+# project's Environment Variables.
+.env
+.env.local
+
+# Build output
+frontend/build/
+
+# Photos uploaded through the app are user data, not source. The committed
+# backend/uploads/sample.png is the one exception and stays tracked.
+backend/uploads/*
+!backend/uploads/sample.png
+
+# Vercel CLI: project link created by `vercel link` / `vercel dev`
+.vercel
+
+# Editor and OS noise
+.DS_Store
+Thumbs.db
+*.log

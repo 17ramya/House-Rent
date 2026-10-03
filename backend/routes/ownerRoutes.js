@@ -2,6 +2,7 @@ const express = require("express");
 const multer = require("multer");
 
 const authMiddlware = require("../middlewares/authMiddlware");
+const uploadsDir = require("../config/uploads.js");
 
 const {
   addPropertyController,
@@ -16,7 +17,9 @@ const router = express.Router();
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "./uploads/");
+    // An absolute path, so it does not depend on the directory the server was
+    // started from - "./uploads/" resolved to a read-only location on Vercel.
+    cb(null, uploadsDir);
   },
   filename: function (req, file, cb) {
     cb(null, file.originalname);

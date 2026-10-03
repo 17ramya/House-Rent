@@ -1,6 +1,7 @@
 import { message } from 'antd';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../../api';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -14,7 +15,7 @@ const AllBookings = () => {
 
    const getAllBooking = async () => {
       try {
-         const response = await axios.get('http://localhost:8001/api/admin/getallbookings', {
+         const response = await axios.get(`${API_BASE_URL}/api/admin/getallbookings`, {
             headers: { 'Authorization': `Bearer ${localStorage.getItem("token")}` }
          });
 

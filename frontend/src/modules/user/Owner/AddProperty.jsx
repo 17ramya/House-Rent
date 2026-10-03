@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Button, Col, Form, InputGroup, Row, FloatingLabel } from 'react-bootstrap';
 import axios from 'axios';
+import { API_BASE_URL } from '../../../api';
 import { message } from 'antd';
 
 function AddProperty() {
@@ -50,7 +51,7 @@ function AddProperty() {
          }
       }
 
-      axios.post('http://localhost:8001/api/owner/postproperty', formData, {
+      axios.post(`${API_BASE_URL}/api/owner/postproperty`, formData, {
          headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
             'Content-Type': 'multipart/form-data',

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Container, Box, Avatar, Button, TextField, Grid, Typography, IconButton, AppBar, Toolbar, Typography as MuiTypography } from '@mui/material';
+import { Container, Box, Avatar, Button, TextField, Grid, Typography, AppBar, Toolbar, Typography as MuiTypography } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import axios from 'axios';
+import { API_BASE_URL } from '../../api';
 import { message } from 'antd';
 
 const Register = () => {
@@ -27,7 +28,7 @@ const Register = () => {
     if (!data?.name || !data?.email || !data?.password || !data?.type) {
       return message.error("Please fill all fields");
     } else {
-      axios.post('http://localhost:8001/api/user/register', data)
+      axios.post(`${API_BASE_URL}/api/user/register`, data)
         .then((response) => {
           if (response.data.success) {
             message.success(response.data.message);

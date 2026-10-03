@@ -4,6 +4,7 @@ import { Container, Box, Avatar, Button, TextField, Grid, Typography, IconButton
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import axios from 'axios';
+import { API_BASE_URL } from '../../api';
 import { message } from 'antd';
 
 const ForgotPassword = () => {
@@ -27,7 +28,7 @@ const ForgotPassword = () => {
     } else {
       if (data.password === data.confirmPassword) {
         axios
-          .post('http://localhost:8001/api/user/forgotpassword', data)
+          .post(`${API_BASE_URL}/api/user/forgotpassword`, data)
           .then((res) => {
             if (res.data.success) {
               message.success('Your password has been changed!');
