@@ -1,7 +1,7 @@
 import { message } from 'antd';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { API_BASE_URL } from '../../api';
+import { API_BASE_URL, apiErrorMessage } from '../../api';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -26,6 +26,7 @@ const AllBookings = () => {
          }
       } catch (error) {
          console.log(error);
+         message.error(apiErrorMessage(error));
       }
    };
 

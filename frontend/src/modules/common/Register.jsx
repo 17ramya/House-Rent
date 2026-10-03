@@ -6,7 +6,7 @@ import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import axios from 'axios';
-import { API_BASE_URL } from '../../api';
+import { API_BASE_URL, apiErrorMessage } from '../../api';
 import { message } from 'antd';
 
 const Register = () => {
@@ -39,6 +39,7 @@ const Register = () => {
         })
         .catch((error) => {
           console.log("Error", error);
+          message.error(apiErrorMessage(error));
         });
     }
   };

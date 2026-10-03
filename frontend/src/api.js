@@ -27,4 +27,16 @@
  */
 export const API_BASE_URL = (process.env.REACT_APP_API_BASE_URL || '').replace(/\/+$/, '');
 
+/**
+ * The message to show when a request fails: whatever the API explained, or - for
+ * a request that never arrived (backend not running, wrong port, deployment with
+ * no database) - a hint about the two things that are usually wrong. Screens used
+ * to log failures to the console only, which made a broken backend look like a
+ * button that does nothing.
+ */
+export const apiErrorMessage = (error, fallback) =>
+  (error && error.response && error.response.data && error.response.data.message) ||
+  fallback ||
+  'Could not reach the API. Is the backend running on port 8001?';
+
 export default API_BASE_URL;

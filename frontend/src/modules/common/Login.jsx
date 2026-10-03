@@ -4,7 +4,7 @@ import { Container, Box, Avatar, Button, TextField, Grid, Typography, IconButton
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import axios from 'axios';
-import { API_BASE_URL } from '../../api';
+import { API_BASE_URL, apiErrorMessage } from '../../api';
 import { message } from 'antd';
 
 const Login = () => {
@@ -61,6 +61,8 @@ const Login = () => {
         .catch((err) => {
           if (err.response && err.response.status === 401) {
             message.error("User doesn't exist");
+          } else {
+            message.error(apiErrorMessage(err));
           }
           navigate("/login");
         });
