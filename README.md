@@ -17,9 +17,7 @@ sign up, sign in and the admin pages work with no connection string. See
 - [5. Project structure](#5-project-structure)
 - [6. API endpoints](#6-api-endpoints)
 - [7. Troubleshooting](#7-troubleshooting)
-- [8. Deploying on Vercel](#8-deploying-on-vercel)
-  - [Simple database (no MongoDB needed)](#simple-database-no-mongodb-needed)
-- [9. Known limits](#9-known-limits)
+
 
 ## 1. What you need
 
@@ -146,6 +144,11 @@ Invoke-RestMethod -Uri http://127.0.0.1:8001/api/admin/getallusers `
 reachable, and `"db":"disconnected"` when it is not. When it is not, the data
 routes answer **HTTP 503** with a message naming the cause instead of hanging.
 
+## Live Demo Link
+```bash
+https://rent-ease-snowy.vercel.app/
+```
+
 ## 5. Project structure
 
 ```
@@ -224,96 +227,6 @@ mongosh "mongodb://127.0.0.1:27017/renteasy" --eval "db.dropDatabase()"
 cd backend
 npm run create-admin -- admin@renteasy.com Admin@123 "Site Admin"   # always re-create the admin
 ```
-
-## 8. Deploying on Vercel
-
-One Vercel project serves both halves. `vercel.json` declares two **services** -
-`frontend` (Create React App) and `backend` (Express) - and three rewrites:
-`/api/*` and `/uploads/*` go to the backend service, everything else to the
-frontend. Neither service is public on its own, so those rewrites are the only
-way in, and the app can call the API with same-origin `/api/...` URLs.
-
-1. **Import the repository** at https://vercel.com/new and leave *Root
-   Directory* as the repository root - `vercel.json` sets each service's root.
-   The frameworks are detected from that file, so add no build or output settings.
-2. **Environment Variables** (Project -> Settings -> Environment Variables), for
-   Production *and* Preview if you use preview deployments:
-
-   | Name | Value |
-   | --- | --- |
-   | `JWT_KEY` | any long random string |
-   | `MONGO_DB` | *optional* - left unset, the deployment runs on the built-in simple database. Set it (plus `USE_SIMPLE_DB=false`) to use MongoDB instead - an Atlas user name that is an email needs `@` written as `%40` |
-   | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | *optional* - the admin the simple database is seeded with (defaults `admin@renteasy.com` / `Admin@123`) |
-   | `UPLOAD_DIR` | *optional* - where property photos are written; a deployment uses `/tmp/uploads` on its own, see section 9 |
-
-   Do **not** set `REACT_APP_API_BASE_URL`. The built app calls the same origin
-   and the rewrites take `/api/...` to the backend service. Nothing else is
-   needed: with no `MONGO_DB` the deployment signs up, signs in and reaches
-   `/adminhome` out of the box.
-
-   **Every value in that table is a secret.** It is typed into Vercel, never
-   into the repository: `backend/.env` (git-ignored) holds it locally and
-   `backend/.env.example` keeps placeholders. A connection string that reaches a
-   commit stays in the git history even after the line is removed, so if one ever
-   does, rotate the database password.
-3. **Redeploy** after adding or changing environment variables:
-   Deployments -> the latest one -> Redeploy. (The first deploy already works.)
-4. **Verify** the deployment:
-
-   ```powershell
-   Invoke-RestMethod https://<your-project>.vercel.app/api/health | ConvertTo-Json
-   ```
-
-   `"db":"simple"` means the built-in simple database is in use and
-   `"db":"connected"` means MongoDB is. If it says `"disconnected"` (you set
-   `USE_SIMPLE_DB=false` but `MONGO_DB` is missing or unreachable) sign-in,
-   sign-up and the admin pages cannot work, and the login page says *"The
-   database is not connected..."* instead of doing nothing.
-5. **Sign in** at `https://<your-project>.vercel.app/login` - the admin is the
-   seeded `admin@renteasy.com` / `Admin@123` unless you set `ADMIN_EMAIL` /
-   `ADMIN_PASSWORD` - then register a Renter and an Owner and grant the owner
-   from the admin's *All users* page.
-
-### Simple database (no MongoDB needed)
-
-So that a deployment works without MongoDB - the thing that made sign in, sign
-up and the admin pages do nothing on an early deploy - the backend carries a
-built-in **simple database**. `backend/config/databaseMode.js` selects it
-automatically on Vercel (set `USE_SIMPLE_DB=true` to force it anywhere, or
-`USE_SIMPLE_DB=false` to force MongoDB). In that mode `backend/db/simpleModel.js`
-hands the three schema files a small JSON-file-backed model with the same API as
-Mongoose (`findOne`, `find`, `new Model`, `save`, `findByIdAndUpdate`, ...), so
-the controllers are unchanged and `requireDatabase` in `index.js` no longer
-turns requests away with a 503.
-
-- The store lives in `SIMPLE_DB_DIR` - `backend/data` locally,
-  `/tmp/renteasy-db` on Vercel. Files are created on first use; `backend/data`
-  is git-ignored.
-- On boot it is seeded with the admin account from step 2 (via `db/seed.js`), so
-  `/adminhome` is reachable immediately. `npm run create-admin -- <email>
-  <password>` also works in this mode.
-- `/api/health` reports `"db":"simple"`.
-- **Not permanent.** `/tmp` is emptied when a Vercel instance is recycled, so
-  accounts and listings can disappear between visits. It is meant to demo the
-  app with no setup - pair it with `USE_SIMPLE_DB=false` and `MONGO_DB` for
-  data that persists.
-
-## 9. Known limits
-
-- **Uploaded photos are temporary on Vercel.** A deployment writes them to
-  `/tmp/uploads` - `backend/config/uploads.js` picks that directory on Vercel
-  because the rest of a deployed filesystem is read-only - and `/tmp` is
-  emptied when a function instance is recycled. A deployed demo should
-  therefore keep using photos that already exist (`backend/uploads/sample.png`)
-  or move uploads to real storage (Cloudinary, S3, GridFS). Only
-  `backend/config/uploads.js` and `backend/routes/ownerRoutes.js` need changing.
-- **Simple-database data is temporary too** - see *Simple database* above.
-- **Forgot password** sets a new password for any email in one step and sends
-  nothing. Fine for a demo, unsafe for production.
-- **Sessions last one day** and live in `localStorage`; there is no refresh token
-  and no logout endpoint, so clearing site data signs you out.
-- **Both services stay private.** If the API ever needs its own hostname, add a
-  rewrite for it in `vercel.json` instead of exposing the service directly.
 
 
 
