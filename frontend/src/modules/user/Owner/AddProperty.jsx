@@ -1,19 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Button, Col, Form, InputGroup, Row, FloatingLabel } from 'react-bootstrap';
 import axios from 'axios';
-import { API_BASE_URL } from '../../../api';
+import { API_BASE_URL, apiErrorMessage } from '../../../api';
 import { message } from 'antd';
+
+const INITIAL_PROPERTY_DETAILS = {
+   propertyType: 'residential',
+   propertyAdType: 'rent',
+   propertyAddress: '',
+   ownerContact: '',
+   propertyAmt: 0,
+   additionalInfo: ''
+};
 
 function AddProperty() {
    const [image, setImage] = useState(null);
-   const [propertyDetails, setPropertyDetails] = useState({
-      propertyType: 'residential',
-      propertyAdType: 'rent',
-      propertyAddress: '',
-      ownerContact: '',
-      propertyAmt: 0,
-      additionalInfo: ''
-   });
+   // Bumped after a successful submit: React then builds a fresh, empty file
+   // input, which is the only reliable way to clear a file input.
+   const [imageKey, setImageKey] = useState(0);
+   const [propertyDetails, setPropertyDetails] = useState(INITIAL_PROPERTY_DETAILS);
 
    const handleImageChange = (e) => {
       const files = e.target.files;
@@ -58,14 +63,24 @@ function AddProperty() {
          }
       })
          .then((res) => {
-            if (res.data.success) {
-               message.success(res.data.message);
-            } else {
-               message.error(res.data.message);
+            if (!res.data.success) {
+               return message.error(res.data.message);
             }
+
+            message.success(res.data.message);
+            setPropertyDetails(INITIAL_PROPERTY_DETAILS);
+            setImage(null);
+            setImageKey((key) => key + 1);
+            // "All Properties" mounted before this property existed, so tell it
+            // to re-read the list instead of leaving a stale, empty table.
+            window.dispatchEvent(new Event('properties:changed'));
          })
          .catch((error) => {
             console.error('Error adding property:', error);
+            // This used to only reach the console, which turned a failed upload
+            // (for example a read-only upload folder on a deployment) into a
+            // button that appeared to do nothing.
+            message.error(apiErrorMessage(error, 'Could not add the property. Please try again.'));
          });
    };
 
@@ -113,6 +128,7 @@ function AddProperty() {
                <Form.Group as={Col} md="6">
                   <Form.Label>Property Images</Form.Label>
                   <Form.Control
+                     key={imageKey}
                      type="file"
                      placeholder="images"
                      required

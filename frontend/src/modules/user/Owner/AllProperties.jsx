@@ -57,6 +57,14 @@ const AllProperties = () => {
       getAllProperty();
    }, []);
 
+   // AddProperty announces a new listing so this table, which mounted before it
+   // existed, re-reads the list instead of showing a stale one.
+   useEffect(() => {
+      const refresh = () => getAllProperty();
+      window.addEventListener('properties:changed', refresh);
+      return () => window.removeEventListener('properties:changed', refresh);
+   }, []);
+
 
    const handleImageChange = (e) => {
       const file = e.target.files[0];

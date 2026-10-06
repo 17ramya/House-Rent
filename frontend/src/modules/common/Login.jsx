@@ -28,35 +28,42 @@ const Login = () => {
       axios
         .post(`${API_BASE_URL}/api/user/login`, data)
         .then((res) => {
-          if (res.data.success) {
-            message.success(res.data.message);
-            localStorage.setItem("token", res.data.token);
-            localStorage.setItem("user", JSON.stringify(res.data.user));
-            const isLoggedIn = JSON.parse(localStorage.getItem("user"));
-            switch (isLoggedIn.type) {
-              case "Admin":
-                navigate("/adminhome");
-                break;
-              case "Renter":
-                navigate("/renterhome");
-                break;
-              case "Owner":
-                if (isLoggedIn.granted === 'ungranted') {
-                  message.error('Your account is not yet confirmed by the admin');
-                } else {
-                  navigate("/ownerhome");
-                }
-                break;
-              default:
-                navigate("/login");
-                break;
-            }
-            setTimeout(() => {
-              window.location.reload();
-            }, 1000);
-          } else {
-            message.error(res.data.message);
+          if (!res.data.success) {
+            return message.error(res.data.message);
           }
+
+          const { token, user } = res.data;
+          const homeByRole = {
+            Admin: "/adminhome",
+            Renter: "/renterhome",
+            Owner: "/ownerhome",
+          };
+
+          // An owner signs up as "ungranted" and cannot use the dashboard until
+          // an admin approves them on the All users page. Say so plainly and do
+          // NOT start a session: the old code stored the token anyway and then
+          // reloaded the login page, so the sign in button looked dead.
+          if (user.type === "Owner" && user.granted === "ungranted") {
+            return message.error(
+              "Your account is waiting to be confirmed by an admin. Please try again once it is approved."
+            );
+          }
+
+          const destination = homeByRole[user.type];
+          if (!destination) {
+            return message.error("This account cannot sign in.");
+          }
+
+          message.success(res.data.message);
+          localStorage.setItem("token", token);
+          localStorage.setItem("user", JSON.stringify(user));
+
+          // A full page load, not navigate(): the three home screens are only
+          // routed once the app has read the session back out of localStorage,
+          // so client side navigation alone showed a blank page until the old
+          // one second reload. vercel.json rewrites every other path to the
+          // frontend, and the dev server answers them with index.html too.
+          window.location.assign(destination);
         })
         .catch((err) => {
           if (err.response && err.response.status === 401) {

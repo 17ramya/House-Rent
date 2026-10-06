@@ -153,7 +153,7 @@ backend/
   index.js                 entry: middlewares, routes, /api/health, exports the app
   config/connect.js        MongoDB connection (MONGO_DB, local fallback)
   config/databaseMode.js   chooses MongoDB or the built-in simple database
-  config/uploads.js        where uploaded photos live (UPLOAD_DIR)
+  config/uploads.js        where uploaded photos live (UPLOAD_DIR; /tmp/uploads on Vercel)
   db/                      simple database: simpleModel.js (JSON store), seed.js (admin)
   controllers/             userController, ownerController, adminController
   middlewares/             authMiddlware.js - verifies the Bearer token
@@ -208,8 +208,9 @@ vercel.json                deploys both halves as two Vercel services
 | Sign in says *Invalid email or password* | wrong password | use "Forgot password", or reset an admin with `npm run create-admin -- <email> <new-password>` |
 | No admin account, `/adminhome` out of reach | the register form has no Admin option | `cd backend` then `npm run create-admin -- admin@renteasy.com Admin@123` |
 | An owner reads *Your account is not yet confirmed by the admin* | owner accounts start as `ungranted` | sign in as admin, All users, press **Granted** |
+| On the owner's Add Property page **Submit form** does nothing and *All Properties* stays empty | an older build wrote the photo to the read-only `backend/uploads` on Vercel, so multer failed and only the browser console said so | redeploy `main` - a deployment stores photos in `/tmp/uploads` on its own and any failure is now shown as a message |
 | The admin tables are empty | that is the data, not a bug | add properties and bookings with the app; check the database name in `backend/.env` |
-| Blank page right after signing in | the session lives in `localStorage` and the page reloads once | reload; check the browser console |
+| Blank page right after signing in | an old build, or a session left in `localStorage` by one | redeploy `main` - signing in now loads the role's home directly; clear the site data if an old session lingers |
 | `npm install` fails on Node 22 | old lockfiles against a new npm | use Node 20, or `npm install --legacy-peer-deps` |
 | *Port already in use* | something else holds 3000 or 8001 | `Get-NetTCPConnection -LocalPort 8001 -State Listen`; set `$env:PORT` before `npm start` |
 | A freshly uploaded photo 404s | photos are served from `/uploads/<filename>` | locally they persist; on Vercel see section 9 |
@@ -241,7 +242,7 @@ way in, and the app can call the API with same-origin `/api/...` URLs.
    | `JWT_KEY` | any long random string |
    | `MONGO_DB` | *optional* - left unset, the deployment runs on the built-in simple database. Set it (plus `USE_SIMPLE_DB=false`) to use MongoDB instead |
    | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | *optional* - the admin the simple database is seeded with (defaults `admin@renteasy.com` / `Admin@123`) |
-   | `UPLOAD_DIR` | `/tmp/uploads` - optional, see section 9 |
+   | `UPLOAD_DIR` | *optional* - where property photos are written; a deployment uses `/tmp/uploads` on its own, see section 9 |
 
    Do **not** set `REACT_APP_API_BASE_URL`. The built app calls the same origin
    and the rewrites take `/api/...` to the backend service. Nothing else is
@@ -291,10 +292,12 @@ turns requests away with a 503.
 
 ## 9. Known limits
 
-- **Uploaded photos are temporary on Vercel.** Only `/tmp` can be written to and
-  it is emptied when a function instance is recycled, so a deployed demo should
-  keep using photos that already exist (`backend/uploads/sample.png`) or move
-  uploads to real storage (Cloudinary, S3, GridFS). Only
+- **Uploaded photos are temporary on Vercel.** A deployment writes them to
+  `/tmp/uploads` - `backend/config/uploads.js` picks that directory on Vercel
+  because the rest of a deployed filesystem is read-only - and `/tmp` is
+  emptied when a function instance is recycled. A deployed demo should
+  therefore keep using photos that already exist (`backend/uploads/sample.png`)
+  or move uploads to real storage (Cloudinary, S3, GridFS). Only
   `backend/config/uploads.js` and `backend/routes/ownerRoutes.js` need changing.
 - **Simple-database data is temporary too** - see *Simple database* above.
 - **Forgot password** sets a new password for any email in one step and sends
