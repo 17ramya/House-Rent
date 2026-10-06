@@ -212,7 +212,7 @@ vercel.json                deploys both halves as two Vercel services
 | An owner reads *Your account is not yet confirmed by the admin* | owner accounts start as `ungranted` | sign in as admin, All users, press **Granted** |
 | On the owner's Add Property page **Submit form** does nothing and *All Properties* stays empty | an older build wrote the photo to the read-only `backend/uploads` on Vercel, so multer failed and only the browser console said so | redeploy `main` - a deployment stores photos in `/tmp/uploads` on its own and any failure is now shown as a message |
 | The admin tables are empty | that is the data, not a bug | add properties and bookings with the app; check the database name in `backend/.env` |
-| Blank page right after signing in | an old build, or a session left in `localStorage` by one | redeploy `main` - signing in now loads the role's home directly; clear the site data if an old session lingers |
+| Blank page right after signing in, or when opening `/adminhome` directly | an old build; a session left in `localStorage` by one; or opening a role's home without signing in, which used to match no route at all | redeploy `main` - signing in loads the role's home directly, and a role home opened without a session now goes to `/login`; clear the site data if an old session lingers |
 | `npm install` fails on Node 22 | old lockfiles against a new npm | use Node 20, or `npm install --legacy-peer-deps` |
 | *Port already in use* | something else holds 3000 or 8001 | `Get-NetTCPConnection -LocalPort 8001 -State Listen`; set `$env:PORT` before `npm start` |
 | A freshly uploaded photo 404s | photos are served from `/uploads/<filename>` | locally they persist; on Vercel see section 9 |
