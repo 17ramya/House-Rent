@@ -4,6 +4,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const connectionofDb = require("./config/connect.js");
 const uploadsDir = require("./config/uploads.js");
+const { useSimpleDb } = require("./config/databaseMode.js");
 
 const app = express();
 
@@ -25,6 +26,12 @@ if (!process.env.JWT_KEY) {
 //////connection to DB/////////////////
 connectionofDb();
 
+// On a deployment that has no MongoDB the app runs on the built-in simple
+// database; make sure it has an admin account to sign in with (see db/seed.js).
+if (useSimpleDb()) {
+  require("./db/seed.js")();
+}
+
 ///////////////port number///////////////////
 const PORT = process.env.PORT || 8001;
 
@@ -37,7 +44,14 @@ app.use(cors());
 // can only ever show as "nothing happened" - answer with something readable
 // instead. A request that arrives while the handshake is still running waits
 // for it rather than being turned away.
+//
+// In the built-in simple-database mode there is nothing to connect to, so every
+// request is let straight through (see config/databaseMode.js).
 const requireDatabase = async (req, res, next) => {
+  if (useSimpleDb()) {
+    return next();
+  }
+
   const deadline = Date.now() + 5000;
   while (mongoose.connection.readyState === 2 && Date.now() < deadline) {
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -71,7 +85,11 @@ app.get("/api/health", (req, res) => {
   res.status(200).send({
     status: "ok",
     service: "house-rent-backend",
-    db: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+    db: useSimpleDb()
+      ? "simple"
+      : mongoose.connection.readyState === 1
+      ? "connected"
+      : "disconnected",
     time: new Date().toISOString(),
   });
 });

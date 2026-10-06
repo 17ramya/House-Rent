@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { useSimpleDb } = require("./databaseMode");
 
 // A mongod running on this machine. Used only when MONGO_DB is not set and the
 // app is not running on Vercel, so a fresh clone works with no .env at all.
@@ -22,6 +23,16 @@ const databaseUri = () => {
  * `/api/health` reports the database state and the routes answer 503 with it.
  */
 const connectionOfDb = async () => {
+  // On a deployment that runs on the built-in simple database there is no
+  // MongoDB to reach, so do not wait or warn about one (config/databaseMode.js).
+  if (useSimpleDb()) {
+    console.log(
+      "Using the built-in simple database (no MongoDB). Sign in, sign up and " +
+        "the admin pages work with no connection string - see README.md."
+    );
+    return;
+  }
+
   const uri = databaseUri();
 
   if (!uri) {

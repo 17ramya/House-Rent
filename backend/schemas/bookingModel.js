@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const { useSimpleDb } = require("../config/databaseMode");
+const createSimpleModel = require("../db/simpleModel");
 
 const bookingModel = mongoose.Schema(
   {
@@ -32,6 +34,10 @@ const bookingModel = mongoose.Schema(
   }
 );
 
-const bookingSchema = mongoose.model("bookingschema", bookingModel);
+// Mongoose locally; the built-in simple database on a deployment with no
+// MongoDB (see config/databaseMode.js).
+const bookingSchema = useSimpleDb()
+  ? createSimpleModel("bookings")
+  : mongoose.model("bookingschema", bookingModel);
 
 module.exports = bookingSchema;

@@ -15,6 +15,10 @@ frontend/build/
 backend/uploads/*
 !backend/uploads/sample.png
 
+# Built-in simple database (backend/db/simpleModel.js) - local development only,
+# created when USE_SIMPLE_DB=true. On Vercel it lives in /tmp.
+backend/data/
+
 # Vercel CLI: project link created by `vercel link` / `vercel dev`
 .vercel
 

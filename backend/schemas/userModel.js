@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const { useSimpleDb } = require("../config/databaseMode");
+const createSimpleModel = require("../db/simpleModel");
 
 const userModel = mongoose.Schema({
   name: {
@@ -24,6 +26,17 @@ const userModel = mongoose.Schema({
    strict: false,
 });
 
-const userSchema = mongoose.model("user", userModel);
+// Locally this is the Mongoose model; on a deployment with no MongoDB it is the
+// built-in simple database (see config/databaseMode.js). The name capitalsation
+// from the schema above is mirrored so a registered name reads the same in both.
+const userSchema = useSimpleDb()
+  ? createSimpleModel("users", {
+      transform: (data) =>
+        typeof data.name === "string" && data.name
+          ? { ...data, name: data.name.charAt(0).toUpperCase() + data.name.slice(1) }
+          : data,
+    })
+  : mongoose.model("user", userModel);
 
 module.exports = userSchema;
+

@@ -5,6 +5,11 @@ React App) + MUI + antd** in `frontend/`. There are three kinds of account -
 **Renter**, **Owner** and **Admin** - and an owner may only publish properties
 once an admin has approved the account.
 
+A deployment does not need MongoDB: unless it is switched off, the backend runs
+on a built-in **simple database** (a small JSON store seeded with an admin) so
+sign up, sign in and the admin pages work with no connection string. See
+[Simple database](#simple-database-no-mongodb-needed).
+
 - [1. What you need](#1-what-you-need)
 - [2. Run it locally](#2-run-it-locally)
 - [3. Accounts and how to log in](#3-accounts-and-how-to-log-in)
@@ -13,6 +18,7 @@ once an admin has approved the account.
 - [6. API endpoints](#6-api-endpoints)
 - [7. Troubleshooting](#7-troubleshooting)
 - [8. Deploying on Vercel](#8-deploying-on-vercel)
+  - [Simple database (no MongoDB needed)](#simple-database-no-mongodb-needed)
 - [9. Known limits](#9-known-limits)
 
 ## 1. What you need
@@ -104,6 +110,10 @@ so keep the same capitalisation.
 The admin pages are **All users** (approve or revoke an owner with the
 Granted/Ungranted button), **All properties** and **All bookings**.
 
+On a deployment that has no MongoDB this admin account is seeded automatically
+instead (see *Simple database* in section 8), so you can sign in there without
+running any command.
+
 ## 4. Check it works (copy-paste commands)
 
 With both servers running:
@@ -142,7 +152,9 @@ routes answer **HTTP 503** with a message naming the cause instead of hanging.
 backend/
   index.js                 entry: middlewares, routes, /api/health, exports the app
   config/connect.js        MongoDB connection (MONGO_DB, local fallback)
+  config/databaseMode.js   chooses MongoDB or the built-in simple database
   config/uploads.js        where uploaded photos live (UPLOAD_DIR)
+  db/                      simple database: simpleModel.js (JSON store), seed.js (admin)
   controllers/             userController, ownerController, adminController
   middlewares/             authMiddlware.js - verifies the Bearer token
   routes/                  userRoutes (/api/user), ownerRoutes (/api/owner), adminRoutes (/api/admin)
@@ -190,7 +202,8 @@ vercel.json                deploys both halves as two Vercel services
 | What you see | Cause | Fix |
 | --- | --- | --- |
 | *Could not reach the API* when signing in or up | the backend is not running, or not on port 8001 | `cd backend` and `npm start`; then `Invoke-RestMethod http://127.0.0.1:8001/api/health` |
-| *The database is not connected...* (HTTP 503) | `MONGO_DB` is missing or unreachable, or MongoDB is stopped | `Get-Service MongoDB` / `net start MongoDB`; for Atlas, allow your IP |
+| On the deployment, sign in / sign up / admin do nothing | the deploy predates the built-in simple database, or `USE_SIMPLE_DB=false` with no reachable `MONGO_DB` | redeploy `main`; sign in with `admin@renteasy.com` / `Admin@123`; `.../api/health` must report "db":"simple" (section 8) |
+| *The database is not connected...* (HTTP 503) | `MONGO_DB` is missing or unreachable, or MongoDB is stopped | locally `Get-Service MongoDB` / `net start MongoDB`; for Atlas allow your IP; on a deployment leave `MONGO_DB` unset (built-in simple database) |
 | Sign in says *User not found* | the email differs from the one registered (login is case-sensitive) | use the exact email, or register again |
 | Sign in says *Invalid email or password* | wrong password | use "Forgot password", or reset an admin with `npm run create-admin -- <email> <new-password>` |
 | No admin account, `/adminhome` out of reach | the register form has no Admin option | `cd backend` then `npm run create-admin -- admin@renteasy.com Admin@123` |
@@ -225,34 +238,56 @@ way in, and the app can call the API with same-origin `/api/...` URLs.
 
    | Name | Value |
    | --- | --- |
-   | `MONGO_DB` | a MongoDB reachable from the internet, for example an Atlas string: `mongodb+srv://user:pass@cluster0.xxxx.mongodb.net/renteasy?retryWrites=true&w=majority` (Atlas -> Network Access -> allow `0.0.0.0/0` for a demo) |
    | `JWT_KEY` | any long random string |
+   | `MONGO_DB` | *optional* - left unset, the deployment runs on the built-in simple database. Set it (plus `USE_SIMPLE_DB=false`) to use MongoDB instead |
+   | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | *optional* - the admin the simple database is seeded with (defaults `admin@renteasy.com` / `Admin@123`) |
    | `UPLOAD_DIR` | `/tmp/uploads` - optional, see section 9 |
 
    Do **not** set `REACT_APP_API_BASE_URL`. The built app calls the same origin
-   and the rewrites take `/api/...` to the backend service.
-3. **Create the admin account on the deployed database**, once, from your own
-   machine, pointing at the same database:
-
-   ```powershell
-   cd backend
-   $env:MONGO_DB = 'mongodb+srv://user:pass@cluster0.xxxx.mongodb.net/renteasy'
-   npm run create-admin -- admin@renteasy.com Admin@123 "Site Admin"
-   ```
-4. **Redeploy** after adding or changing environment variables:
-   Deployments -> the latest one -> Redeploy.
-5. **Verify** the deployment:
+   and the rewrites take `/api/...` to the backend service. Nothing else is
+   needed: with no `MONGO_DB` the deployment signs up, signs in and reaches
+   `/adminhome` out of the box.
+3. **Redeploy** after adding or changing environment variables:
+   Deployments -> the latest one -> Redeploy. (The first deploy already works.)
+4. **Verify** the deployment:
 
    ```powershell
    Invoke-RestMethod https://<your-project>.vercel.app/api/health | ConvertTo-Json
    ```
 
-   It must report `"db":"connected"`. If it reports `disconnected`, sign-in,
-   sign-up and the admin pages cannot work yet, and the login page will now say
-   *"The database is not connected..."* instead of doing nothing.
-6. **Sign in** at `https://<your-project>.vercel.app/login` with the admin account
-   from step 3, then register a Renter and an Owner and grant the owner from the
-   admin's *All users* page.
+   `"db":"simple"` means the built-in simple database is in use and
+   `"db":"connected"` means MongoDB is. If it says `"disconnected"` (you set
+   `USE_SIMPLE_DB=false` but `MONGO_DB` is missing or unreachable) sign-in,
+   sign-up and the admin pages cannot work, and the login page says *"The
+   database is not connected..."* instead of doing nothing.
+5. **Sign in** at `https://<your-project>.vercel.app/login` - the admin is the
+   seeded `admin@renteasy.com` / `Admin@123` unless you set `ADMIN_EMAIL` /
+   `ADMIN_PASSWORD` - then register a Renter and an Owner and grant the owner
+   from the admin's *All users* page.
+
+### Simple database (no MongoDB needed)
+
+So that a deployment works without MongoDB - the thing that made sign in, sign
+up and the admin pages do nothing on an early deploy - the backend carries a
+built-in **simple database**. `backend/config/databaseMode.js` selects it
+automatically on Vercel (set `USE_SIMPLE_DB=true` to force it anywhere, or
+`USE_SIMPLE_DB=false` to force MongoDB). In that mode `backend/db/simpleModel.js`
+hands the three schema files a small JSON-file-backed model with the same API as
+Mongoose (`findOne`, `find`, `new Model`, `save`, `findByIdAndUpdate`, ...), so
+the controllers are unchanged and `requireDatabase` in `index.js` no longer
+turns requests away with a 503.
+
+- The store lives in `SIMPLE_DB_DIR` - `backend/data` locally,
+  `/tmp/renteasy-db` on Vercel. Files are created on first use; `backend/data`
+  is git-ignored.
+- On boot it is seeded with the admin account from step 2 (via `db/seed.js`), so
+  `/adminhome` is reachable immediately. `npm run create-admin -- <email>
+  <password>` also works in this mode.
+- `/api/health` reports `"db":"simple"`.
+- **Not permanent.** `/tmp` is emptied when a Vercel instance is recycled, so
+  accounts and listings can disappear between visits. It is meant to demo the
+  app with no setup - pair it with `USE_SIMPLE_DB=false` and `MONGO_DB` for
+  data that persists.
 
 ## 9. Known limits
 
@@ -261,6 +296,7 @@ way in, and the app can call the API with same-origin `/api/...` URLs.
   keep using photos that already exist (`backend/uploads/sample.png`) or move
   uploads to real storage (Cloudinary, S3, GridFS). Only
   `backend/config/uploads.js` and `backend/routes/ownerRoutes.js` need changing.
+- **Simple-database data is temporary too** - see *Simple database* above.
 - **Forgot password** sets a new password for any email in one step and sends
   nothing. Fine for a demo, unsafe for production.
 - **Sessions last one day** and live in `localStorage`; there is no refresh token

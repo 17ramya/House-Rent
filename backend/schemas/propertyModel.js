@@ -1,4 +1,6 @@
 const mongoose = require('mongoose')
+const { useSimpleDb } = require('../config/databaseMode')
+const createSimpleModel = require('../db/simpleModel')
 
 const propertyModel = mongoose.Schema({
    ownerId:{
@@ -38,6 +40,10 @@ const propertyModel = mongoose.Schema({
    strict: false,
 })
 
-const propertySchema = mongoose.model('propertyschema', propertyModel)
+// Mongoose locally; the built-in simple database on a deployment with no
+// MongoDB (see config/databaseMode.js).
+const propertySchema = useSimpleDb()
+  ? createSimpleModel('propertschemas')
+  : mongoose.model('propertyschema', propertyModel)
 
 module.exports = propertySchema

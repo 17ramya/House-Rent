@@ -16,6 +16,7 @@ const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 
 const connectionOfDb = require("../config/connect");
+const { useSimpleDb } = require("../config/databaseMode");
 const userSchema = require("../schemas/userModel");
 
 dotenv.config();
@@ -28,6 +29,36 @@ const createAdmin = async () => {
       'Usage: npm run create-admin -- <email> <password> ["Full Name"]'
     );
     process.exit(1);
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
+
+  // Built-in simple database: no MongoDB involved, the account is written to
+  // the simple store (see config/databaseMode.js and db/simpleModel.js).
+  if (useSimpleDb()) {
+    const existingAdmin = await userSchema.findOne({ email });
+    if (existingAdmin) {
+      existingAdmin.name = name;
+      existingAdmin.password = hashedPassword;
+      existingAdmin.type = "Admin";
+      existingAdmin.granted = "granted";
+      await existingAdmin.save();
+      console.log(`Reset the admin account ${email}.`);
+    } else {
+      await userSchema.create({
+        name,
+        email,
+        password: hashedPassword,
+        type: "Admin",
+        granted: "granted",
+      });
+      console.log(`Created the admin account ${email}.`);
+    }
+    console.log(
+      "Sign in at /login with that email and password - you land on /adminhome."
+    );
+    return;
   }
 
   const uri = connectionOfDb.databaseUri();
@@ -45,9 +76,6 @@ const createAdmin = async () => {
     console.error(`Could not connect to MongoDB: ${error.message}`);
     process.exit(1);
   }
-
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
 
   const existingAdmin = await userSchema.findOne({ email });
 
