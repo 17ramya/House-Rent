@@ -240,7 +240,7 @@ way in, and the app can call the API with same-origin `/api/...` URLs.
    | Name | Value |
    | --- | --- |
    | `JWT_KEY` | any long random string |
-   | `MONGO_DB` | *optional* - left unset, the deployment runs on the built-in simple database. Set it (plus `USE_SIMPLE_DB=false`) to use MongoDB instead |
+   | `MONGO_DB` | *optional* - left unset, the deployment runs on the built-in simple database. Set it (plus `USE_SIMPLE_DB=false`) to use MongoDB instead - an Atlas user name that is an email needs `@` written as `%40` |
    | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | *optional* - the admin the simple database is seeded with (defaults `admin@renteasy.com` / `Admin@123`) |
    | `UPLOAD_DIR` | *optional* - where property photos are written; a deployment uses `/tmp/uploads` on its own, see section 9 |
 
@@ -248,6 +248,12 @@ way in, and the app can call the API with same-origin `/api/...` URLs.
    and the rewrites take `/api/...` to the backend service. Nothing else is
    needed: with no `MONGO_DB` the deployment signs up, signs in and reaches
    `/adminhome` out of the box.
+
+   **Every value in that table is a secret.** It is typed into Vercel, never
+   into the repository: `backend/.env` (git-ignored) holds it locally and
+   `backend/.env.example` keeps placeholders. A connection string that reaches a
+   commit stays in the git history even after the line is removed, so if one ever
+   does, rotate the database password.
 3. **Redeploy** after adding or changing environment variables:
    Deployments -> the latest one -> Redeploy. (The first deploy already works.)
 4. **Verify** the deployment:
